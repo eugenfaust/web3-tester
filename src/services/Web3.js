@@ -3,20 +3,22 @@ import Web3 from 'web3/dist/web3.min';
 // import WalletConnectProvider from '@walletconnect/web3-provider';
 // Fix for ReferenceError: global is not defined
 import WalletConnectProvider from '@walletconnect/web3-provider/dist/umd/index.min';
-import FlyNFT from '../abi/FlyNFT.json';
 import chains from '../utils/chains';
 
 export default class Web3Service {
-  static infuraId = import.meta.env.VITE_INFURA_KEY;
-
-  static nftContract = import.meta.env.VITE_NFT_CONTRACT;
-
-  static abi = FlyNFT.abi;
-
   // For testing purposes we use Goerli
   static defaultChain = 5;
 
   static currentProvider = Web3.givenProvider;
+
+  static async executeFunction(owner, address, method, inputArgs, abi) {
+    let contract = this.getProvider().eth;
+    contract = new contract.Contract(abi, address);
+    if (method.stateMutability === 'view') {
+      return contract.methods[method.name](...inputArgs).call();
+    }
+    return contract.methods[method.name](...inputArgs).send({ from: owner });
+  }
 
   static async buyNFT(account) {
     let nftContract = this.getProvider().eth;
@@ -165,7 +167,7 @@ export default class Web3Service {
         await provider.request({ method: 'eth_requestAccounts' })
       )[0];
       this.currentProvider = provider;
-      this.changeChain(this.defaultChain);
+      // this.changeChain(this.defaultChain);
       return account;
     }
     return undefined;

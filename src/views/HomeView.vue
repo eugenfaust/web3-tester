@@ -1,5 +1,4 @@
 <script>
-import axios from 'axios';
 import { useToast } from 'vue-toastification';
 import Web3 from '../services/Web3';
 
@@ -11,81 +10,179 @@ export default {
   },
   data() {
     return {
-      nftImg: undefined,
+      abiField: '',
+      isAbiCorrect: true,
+      abi: {},
+      abiMethods: [],
+      selectedMethod: '',
+      selectedFunction: {},
+      inputArgs: [],
+      isExecuting: false,
+      executeResponse: '',
+      contractAddress: '',
     };
   },
-  methods: {
-    async searchPicture() {
+  watch: {
+    abiField(newAbi) {
       try {
-        // TODO: add ipfs request
-        // const result = await Web3.getURI(this.tokenID);
-        // const response = await axios.get(result);
-        // this.nftImg = 'https://www.linkpicture.com/q/cat1.jpg';
-        const result = await Web3.getURI(this.tokenID);
-        console.log(result);
-        const ipfsUrl = `https://nft.scriptscamp.space/ipfs/${result.substring(7)}`;
-        const response = await (await fetch(ipfsUrl)).json();
-        console.log(response);
-        const imageUrl = `https://nft.scriptscamp.space/ipfs/${response.image.substring(7)}`;
-        this.nftImg = imageUrl;
-        this.toast.info(`Trying to load: ${imageUrl}`);
+        let abi = JSON.parse(newAbi);
+        abi = typeof abi.abi === 'undefined' ? abi : abi.abi;
+        this.abi = abi;
+        this.abiMethods = this.abi.filter(
+          (value) => value.type === 'function',
+        );
+        this.isAbiCorrect = true;
       } catch (error) {
-        this.nftImg = undefined;
-        this.toast.error(error.message);
+        this.abi = {};
+        this.abiMethods = [];
+        this.isAbiCorrect = false;
       }
     },
-    async saveToStorage() {
-      console.log(await Web3.balanceOf(this.$store.state.address));
+    selectedMethod(method) {
+      this.selectedFunction = this.abiMethods.find(
+        (value) => value.name === method,
+      );
+      this.inputArgs = this.selectedFunction.inputs.map((el) => ({
+        name: el.name,
+        value: '',
+      }));
     },
-
+  },
+  computed: {
+    address() {
+      return this.$store.state.address;
+    },
+    selectedArgs() {
+      return this.selectedFunction.inputs;
+    },
+  },
+  methods: {
+    openConnectModal() {
+      this.$store.commit('setConnectModal', true);
+    },
+    putArgument(e) {
+      const arg = this.inputArgs.find((el) => el.name === e.target.id);
+      if (arg) {
+        arg.value = e.target.value;
+      } else {
+        this.inputArgs.push({ name: e.target.id, value: e.target.value });
+      }
+    },
+    async execute() {
+      if (typeof this.address === 'undefined') {
+        this.openConnectModal();
+        return;
+      }
+      this.isExecuting = true;
+      try {
+        const args = this.inputArgs.map((el) => el.value);
+        const resp = await Web3.executeFunction(
+          this.$store.state.address,
+          this.contractAddress,
+          this.selectedFunction,
+          args,
+          this.abi,
+        );
+        this.executeResponse = JSON.stringify(resp);
+      } catch (error) {
+        this.executeResponse = error.message;
+      } finally {
+        this.isExecuting = false;
+      }
+    },
   },
 };
 </script>
 <template>
-  <div
-    class="hero min-h-screen"
-    style="background-image: url(https://placeimg.com/1000/800/arch)"
-  >
-    <div class="hero-overlay bg-opacity-60"></div>
-    <div class="hero-content text-center text-neutral-content flex flex-col">
-      <div class="form-control bg-base-200 rounded-xl p-5">
-        <label class="label">
-          <span class="label-text">Enter tokenID and get picture</span>
-        </label>
-        <div class="input-group">
-          <input
-            type="text"
-            placeholder="tokenID"
-            v-model="tokenID"
-            class="input input-bordered text-accent"
-            @keyup.enter="searchPicture"
-          />
-          <button class="btn btn-square" @click="saveToStorage">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+  <div class="min-h-screen w-full flex flex-row justify-between">
+    <div class="text-center flex flex-col bg-base-200 w-full">
+      <div class="flex justify-between gap-10">
+        <div class="ml-2 flex justify-start flex-col w-2/4">
+          <div class="flex flex-col gap-1">
+            <div class="form-control w-full ">
+              <label class="label">
+                <span class="label-text">Contract address</span>
+              </label>
+              <input
+                type="text"
+                placeholder="0x...."
+                v-model="contractAddress"
+                class="input input-bordered w-full"
               />
-            </svg>
-          </button>
+            </div>
+          </div>
+          <div class="flex flex-col">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Put your ABI</span>
+              </label>
+              <textarea
+                class="textarea textarea-bordered h-36 leading-3 w-full"
+                :class="{
+                  'textarea-error': !isAbiCorrect,
+                  'textarea-success': isAbiCorrect,
+                }"
+                placeholder="ABI"
+                v-model="abiField"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-col mr-2 gap-2 w-2/3">
+          <span class="text-sm mt-2">Function arguments</span>
+          <div
+            class="flex gap-2 items-center justify-between"
+            v-for="argument in selectedFunction.inputs"
+            :key="argument.name"
+          >
+            <span class="w-1/3 text-start">{{ argument.name }}</span>
+            <input
+              :id="argument.name"
+              type="text"
+              :placeholder="argument.type"
+              @change="putArgument"
+              class="input input-bordered max-w-xs w-2/3"
+            />
+          </div>
         </div>
       </div>
-      <Transition>
-        <img
-          v-if="nftImg"
-          :src="nftImg"
-          :key="nftImg"
-          class="card w-96 h-96 bg-base-100 shadow-xl p-1"
-        />
-      </Transition>
+
+      <button
+        class="btn mt-2 mr-2 btn-primary max-w-xs self-end w-32"
+        :class="{
+          'loading': isExecuting,
+        }"
+        :disabled="isExecuting"
+        @click="execute"
+      >
+        Execute
+      </button>
+      <div class="divider">Response</div>
+      <textarea
+        class="textarea textarea-bordered h-full w-full"
+        placeholder="Contract response"
+        v-model="executeResponse"
+      ></textarea>
+    </div>
+    <div class="form-control w-1/3">
+      <label class="label"
+        ><span class="label-text"
+          >Function type: {{ selectedFunction.stateMutability }}</span
+        >
+      </label>
+      <select
+        class="select w-full max-w-xs h-screen"
+        v-model="selectedMethod"
+        size="1000"
+      >
+        <option v-for="func in abiMethods" :key="func.name" :value="func.name">
+          {{
+            `${func.name}(${func.inputs.map((val) => {
+              return val.name;
+            })})`
+          }}
+        </option>
+      </select>
     </div>
   </div>
 </template>

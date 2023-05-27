@@ -52,7 +52,12 @@ export default {
   computed: {
     chain() {
       const curChain = this.$store.state.chainId;
-      return this.chains.find((el) => el.id === curChain) ?? this.unknownChain;
+      let chainObj = this.chains.find((el) => el.id === curChain);
+      if (!chainObj) {
+        chainObj = this.unknownChain;
+        chainObj.title = `0x${curChain}`;
+      }
+      return chainObj;
     },
     address() {
       return this.$store.state.address;

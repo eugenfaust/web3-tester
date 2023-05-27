@@ -2,6 +2,7 @@
 import NavbarVue from './components/NavBar.vue';
 import FooterVue from './components/Footer.vue';
 import Web3 from './services/Web3';
+import HomeView from './views/HomeView.vue';
 
 export default {
   data() {
@@ -28,7 +29,7 @@ export default {
       return this.$store.state.address;
     },
     theme() {
-      return this.$store.state.theme === 'light' ? 'cupcake' : 'business';
+      return this.$store.state.theme === 'light' ? 'wireframe' : 'dark';
     },
   },
   watch: {
@@ -36,7 +37,7 @@ export default {
       this.subscribeOnChanges();
     },
   },
-  components: { NavbarVue, FooterVue },
+  components: { NavbarVue, FooterVue, HomeView },
   async mounted() {
     this.$store.commit('setTheme', localStorage.getItem('theme') || 'light');
     const wallet = await Web3.getWallet();
@@ -54,7 +55,7 @@ export default {
   <div :data-theme="theme">
     <NavbarVue />
     <div class="flex justify-center items-center pt-16">
-      <router-view />
+      <HomeView/>
     </div>
     <FooterVue />
   </div>

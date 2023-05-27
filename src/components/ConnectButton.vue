@@ -66,28 +66,6 @@ export default {
         class="menu menu-compact dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52"
         :class="{ hidden: !openMenu }"
       >
-        <router-link to="/wallet/invest">
-          <li>
-            <p class="justify-between">
-              Wallet
-              <span class="badge">New</span>
-            </p>
-          </li>
-        </router-link>
-        <router-link to="/buy_nft">
-          <li>
-            <p class="justify-between">
-              Buy NFT
-            </p>
-          </li>
-        </router-link>
-        <router-link to="/wallet/nft">
-          <li>
-            <p class="justify-between">
-              Your NFTs
-            </p>
-          </li>
-        </router-link>
         <li @click="disconnectWallet"><p>Disconnect wallet</p></li>
       </ul>
     </div>

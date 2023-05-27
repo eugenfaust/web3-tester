@@ -25,16 +25,13 @@ export default {
   },
   computed: {
     currentRoute() {
-      return this.$route.path;
+      return '/';
     },
     screenWidth() {
       return window.innerWidth;
     },
   },
   methods: {
-    homePage() {
-      this.$router.push('/');
-    },
     showDrawer() {
       this.$store.commit('setDrawer', !this.$store.state.showDrawer);
     },
@@ -87,8 +84,8 @@ export default {
         ></path>
       </svg>
 
-      <a class="ml-2 select-none normal-case text-xl text-primary-content" @click="homePage"
-        >Web3App</a
+      <a class="ml-2 select-none normal-case text-xl text-primary-content"
+        >Web3 ToolBox</a
       >
     </div>
     <ThemeSwitcher/>

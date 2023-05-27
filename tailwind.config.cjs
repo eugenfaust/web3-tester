@@ -7,16 +7,8 @@ module.exports = {
   },
   daisyui: {
     themes: [
-      'business',
-      'cupcake',
-      'light',
+      'wireframe',
       'dark',
-      {
-        halloween: {
-          ...require('daisyui/src/colors/themes')['[data-theme=halloween]'],
-          secondary: '#a81311',
-        },
-      },
     ],
   },
   plugins: [require('daisyui')],
